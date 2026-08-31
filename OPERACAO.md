@@ -93,10 +93,10 @@ Para conferir a configuração sem enviar nada, use
 code 1010", é o Cloudflare bloqueando o User-Agent padrão do Python, não um
 problema da chave; refaça a consulta com `curl`.
 
-**Não há recuperação de senha por e-mail.** A aplicação não tem tela de
-"esqueci minha senha" e o Supabase está sem SMTP configurado. Quem esquecer a
-senha depende de um administrador redefinir com o `trocar_senha.py` (ver
-"Tarefas do dia a dia").
+**O "esqueci minha senha" usa o mesmo Resend.** Quem envia esse e-mail é o
+Supabase, não a aplicação, então o SMTP do GoTrue aponta para
+`smtp.resend.com:587` (usuário `resend`, senha = a chave de API). Ao rotacionar
+a chave, atualize os dois lugares: `app.env` e `supabase/.env`.
 
 ---
 
@@ -110,9 +110,11 @@ como quinto argumento.
 ssh root@169.58.32.104 'python3 /opt/central-financeiro/criar_usuario.py maria@avantejuntos.com.br "Maria Silva" solicitante'
 ```
 
-**Trocar a senha de alguém.** A aplicação **não tem** tela de troca de senha
-nem de "esqueci minha senha" — toda alteração passa por aqui. A senha é
-digitada oculta e não fica no histórico do shell:
+**Trocar a senha de alguém pelo servidor.** No uso normal ninguém precisa
+disto: a pessoa troca a própria senha em **Minha conta**, no menu do usuário, e
+quem esqueceu usa o **Esqueci minha senha** na tela de login. Este script serve
+para quando alguém perde também o acesso ao próprio e-mail. A senha é digitada
+oculta e não fica no histórico do shell:
 
 ```bash
 python3 /opt/central-financeiro/trocar_senha.py pessoa@avantejuntos.com.br
@@ -146,6 +148,28 @@ ssh root@169.58.32.104 'cd /opt/central-financeiro/supabase && sh run.sh start'
 ```bash
 ssh root@169.58.32.104 'docker exec supabase-db pg_dump -U postgres postgres | gzip > /root/db-backups/central-financeiro-$(date +%F).sql.gz'
 ```
+
+---
+
+## Senhas: como funciona para o usuário
+
+- **Trocar a própria senha:** menu do usuário (canto superior direito) →
+  **Minha conta**. Pede a senha atual antes de aceitar a nova, para que uma
+  sessão deixada aberta não permita a troca.
+- **Esqueceu a senha:** link **Esqueci minha senha** na tela de login. Chega um
+  e-mail com um link válido por 1 hora, que funciona em qualquer navegador ou
+  celular, não só no aparelho que pediu.
+- Mínimo de 8 caracteres, aplicado na tela (`PASSWORD_MIN_LENGTH` em
+  `lib/validation.ts`) e no servidor (`GOTRUE_PASSWORD_MIN_LENGTH` no compose
+  do Supabase). Alterar um sem o outro faz a tela prometer uma regra que o
+  servidor recusa.
+
+O link de recuperação traz a sessão no fragmento da URL (`#access_token=...`),
+que o navegador nunca envia ao servidor. Por isso `/redefinir-senha` e
+`/esqueci-senha` estão na lista de rotas públicas do `middleware.ts`: se
+exigissem sessão, o middleware mandaria a pessoa para o login antes de o
+JavaScript da página conseguir ler o fragmento. Se essas rotas saírem dessa
+lista, a recuperação de senha para de funcionar sem dar erro visível.
 
 ---
 

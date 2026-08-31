@@ -24,8 +24,9 @@ export default function RedefinirSenhaPage() {
   const [motivo, setMotivo] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    // Link expirado ou já usado: o Supabase devolve o erro no próprio fragmento.
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+
+    // Link expirado ou já usado: o Supabase devolve o erro no próprio fragmento.
     if (hash.get("error")) {
       const codigo = hash.get("error_code");
       setMotivo(
@@ -37,41 +38,49 @@ export default function RedefinirSenhaPage() {
       return;
     }
 
-    let vivo = true;
-    let supabase: ReturnType<typeof createClient>;
-    try {
-      supabase = createClient();
-    } catch {
-      setMotivo("O sistema está sem as credenciais do Supabase configuradas.");
+    const accessToken = hash.get("access_token");
+    const refreshToken = hash.get("refresh_token");
+    if (!accessToken || !refreshToken) {
+      setMotivo("Não encontramos um link de recuperação válido nesta página.");
       setEstado("invalido");
       return;
     }
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evento, sessao) => {
-      if (vivo && sessao) setEstado("pronto");
-    });
+    let vivo = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!vivo) return;
-      if (data.session) setEstado("pronto");
-    });
+    (async () => {
+      try {
+        const supabase = createClient();
 
-    // Rede lenta ou link aberto sem fragmento nenhum: não deixa a tela girando.
-    const limite = setTimeout(() => {
-      if (!vivo) return;
-      setEstado((atual) => {
-        if (atual === "verificando") {
-          setMotivo("Não encontramos um link de recuperação válido nesta página.");
-          return "invalido";
+        // Os tokens são lidos e aplicados à mão, em vez de deixar o supabase-js
+        // detectar sozinho: o cliente do @supabase/ssr é fixado em flowType
+        // "pkce" e recusa explicitamente uma sessão vinda no fragmento
+        // ("Not a valid PKCE flow url"). O setSession valida os tokens e grava
+        // a sessão nos cookies, que é o que o middleware e o servidor leem.
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (!vivo) return;
+
+        if (error) {
+          setMotivo("Este link expirou ou já foi usado. Peça um novo para continuar.");
+          setEstado("invalido");
+          return;
         }
-        return atual;
-      });
-    }, 5000);
+
+        // Tira os tokens da barra de endereços e do histórico do navegador.
+        window.history.replaceState(window.history.state, "", window.location.pathname);
+        setEstado("pronto");
+      } catch {
+        if (!vivo) return;
+        setMotivo("O sistema está sem as credenciais do Supabase configuradas.");
+        setEstado("invalido");
+      }
+    })();
 
     return () => {
       vivo = false;
-      clearTimeout(limite);
-      sub.subscription.unsubscribe();
     };
   }, []);
 
