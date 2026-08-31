@@ -1,7 +1,12 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/health"];
+// Rotas que respondem sem sessão. As duas de senha precisam estar aqui por um
+// motivo específico: no fluxo de recuperação a sessão chega no fragmento da
+// URL (#access_token=...), que o navegador nunca envia ao servidor. Se o
+// middleware exigisse sessão, ele mandaria a pessoa para o /login antes de o
+// JavaScript da página conseguir ler o fragmento.
+const PUBLIC_PATHS = ["/login", "/api/health", "/esqueci-senha", "/redefinir-senha", "/api/auth"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });

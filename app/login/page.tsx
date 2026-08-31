@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Wallet, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -74,7 +75,14 @@ function LoginForm() {
             />
           </div>
           <div>
-            <Label htmlFor="password">Senha</Label>
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <Label htmlFor="password" className="mb-0">
+                Senha
+              </Label>
+              <Link href="/esqueci-senha" className="text-xs text-primary-600 hover:text-primary-700">
+                Esqueci minha senha
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"
