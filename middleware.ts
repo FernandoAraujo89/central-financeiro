@@ -44,6 +44,24 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
+  // Usuário desativado (users.active = false) é deslogado à força aqui, e não
+  // apenas barrado nas páginas: o Supabase Auth não conhece o campo active,
+  // então a sessão dele continuaria válida. Se só as páginas o expulsassem
+  // para /login, o redirecionamento de "logado em /login → /dashboard" logo
+  // abaixo criaria um loop infinito entre as duas rotas.
+  if (user) {
+    const { data: profile } = await supabase.from("users").select("active").eq("id", user.id).single();
+    if (profile && profile.active === false) {
+      await supabase.auth.signOut();
+      // O signOut grava a limpeza dos cookies em `response` (via handlers
+      // acima); um redirect novo não os carregaria e o navegador continuaria
+      // com a sessão. Copiamos os cookies para o redirect antes de devolver.
+      const redirect = NextResponse.redirect(new URL("/login?desativado=1", request.url));
+      response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+      return redirect;
+    }
+  }
+
   if (!user && !isPublic && !pathname.startsWith("/_next")) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("next", pathname);

@@ -25,6 +25,7 @@ function LoginForm() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const desativado = searchParams.get("desativado") === "1";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,6 +62,11 @@ function LoginForm() {
           <p className="text-sm text-neutral-500">Central de solicitações financeiras</p>
         </div>
 
+        {desativado && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Esta conta foi desativada pelo administrador. Se acha que é um engano, fale com o financeiro.
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm space-y-4">
           <div>
             <Label htmlFor="email">E-mail</Label>
