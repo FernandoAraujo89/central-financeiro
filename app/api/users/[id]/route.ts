@@ -20,3 +20,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (error) return serverError(error);
   return NextResponse.json({ data });
 }
+
+/**
+ * "Excluir" um usuário faz uma exclusão lógica (active = false) em vez de
+ * apagar a conta: solicitações, comentários e histórico já registrados por
+ * esse usuário continuam intactos, e o usuário só perde o acesso.
+ */
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await getAuthedUser();
+  if (!auth) return unauthorized();
+  const { user, supabase } = auth;
+  if (!permissions.canManageUsers(user.role)) return forbidden();
+  if (params.id === user.id) return badRequest("Você não pode excluir seu próprio usuário.");
+
+  const { data, error } = await supabase.from("users").update({ active: false }).eq("id", params.id).select("*").single();
+  if (error) return serverError(error);
+  return NextResponse.json({ data });
+}

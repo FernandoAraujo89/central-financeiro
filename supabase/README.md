@@ -1,16 +1,23 @@
 # Banco de dados — Supabase
 
-Este diretório contém a migração completa do banco (`migrations/0001_init.sql`)
-e um `seed.sql` opcional para dados de teste.
+Este diretório contém as migrações do banco, em ordem:
+- `migrations/0001_init.sql` — schema completo (tabelas, tipos, RLS, bucket de anexos).
+- `migrations/0002_authorization_responsible.sql` — ajusta o campo "Responsável
+  pela autorização" para usar a lista fixa de nomes (Mariana Luiza, Thiago,
+  Luis Guilherme, Raul, Drielli, Juliana) em vez de referenciar um usuário do
+  sistema.
 
-## Como aplicar a migração
+E um `seed.sql` opcional para dados de teste.
+
+## Como aplicar as migrações
 
 ### Opção A — SQL Editor (mais simples, recomendado para quem não usa terminal)
 1. Acesse o painel do seu projeto em https://supabase.com/dashboard
 2. Vá em **SQL Editor** → **New query**
 3. Abra o arquivo `migrations/0001_init.sql`, copie todo o conteúdo e cole no editor
 4. Clique em **Run**. Isso cria todos os tipos, tabelas, triggers, políticas de RLS e o bucket de anexos.
-5. (Opcional) Repita o processo com `seed.sql` para inserir empresas de exemplo.
+5. Repita o processo com `migrations/0002_authorization_responsible.sql` (nessa ordem, depois do 0001).
+6. (Opcional) Repita o processo com `seed.sql` para inserir empresas de exemplo.
 
 ### Opção B — Supabase CLI
 ```bash

@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { UserSelect } from "@/components/features/user-select";
 import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 import { maskDocument, maskCurrencyInput, parseBRLInput, onlyDigits, isValidDocument } from "@/lib/masks";
 import {
+  AUTHORIZATION_RESPONSIBLES,
   CLIENT_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
   REQUEST_TYPE_LABELS,
+  type AuthorizationResponsible,
   type ClientType,
   type Company,
   type AppUser,
@@ -31,13 +32,15 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
   const router = useRouter();
   const { toast } = useToast();
 
-  const [title, setTitle] = React.useState("");
   const [companyId, setCompanyId] = React.useState<string>("");
   const [requestType, setRequestType] = React.useState<RequestType>("cancelamento");
   const [clientType, setClientType] = React.useState<ClientType>("pessoa_juridica");
   const [document, setDocument] = React.useState("");
   const [clientName, setClientName] = React.useState("");
-  const [responsibleId, setResponsibleId] = React.useState<string | null>(null);
+  const [authResponsible, setAuthResponsible] = React.useState<AuthorizationResponsible | null>(null);
+
+  // Título gerado automaticamente: "Tipo de Solicitação - Nome do Cliente"
+  const title = clientName.trim() ? `${REQUEST_TYPE_LABELS[requestType]} - ${clientName.trim()}` : "";
   const [totalAmount, setTotalAmount] = React.useState("");
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod | "">("");
@@ -92,7 +95,6 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
-    if (title.trim().length < 3) newErrors.title = "Informe um título com pelo menos 3 caracteres.";
     if (!companyId) newErrors.companyId = "Selecione a empresa solicitante.";
     if (!isValidDocument(document, clientType)) newErrors.document = `${clientType === "pessoa_fisica" ? "CPF" : "CNPJ"} inválido.`;
     if (clientName.trim().length < 2) newErrors.clientName = "Informe o nome do cliente.";
@@ -143,7 +145,7 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
           document: onlyDigits(document),
           client_name: clientName,
           request_type: requestType,
-          authorization_responsible_id: responsibleId,
+          authorization_responsible: authResponsible,
           total_amount: totalAmountNum,
           discount_amount: discountAmountNum,
           payment_method: paymentMethod || null,
@@ -190,9 +192,9 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
         <h2 className="mb-4 text-base font-semibold text-neutral-800">Identificação</h2>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="md:col-span-2">
-            <Label>Título / Identificação da Demanda *</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex.: Cancelamento de contrato — Cliente XPTO" />
-            {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title}</p>}
+            <Label>Título da solicitação</Label>
+            <Input value={title} readOnly placeholder="Gerado automaticamente: Tipo - Cliente" className="bg-neutral-50 text-neutral-500" />
+            <p className="mt-1 text-xs text-neutral-400">Gerado automaticamente a partir do Tipo de Solicitação e do Nome do Cliente.</p>
           </div>
 
           <div>
@@ -235,7 +237,22 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
 
           <div>
             <Label>Responsável pela autorização</Label>
-            <UserSelect users={users} value={responsibleId} onChange={setResponsibleId} placeholder="Opcional" />
+            <Select
+              value={authResponsible || "none"}
+              onValueChange={(v) => setAuthResponsible(v === "none" ? null : (v as AuthorizationResponsible))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não sei / não se aplica</SelectItem>
+                {AUTHORIZATION_RESPONSIBLES.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </section>

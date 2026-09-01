@@ -1,13 +1,17 @@
 import { z } from "zod";
+import { AUTHORIZATION_RESPONSIBLES } from "./types";
 
+// O título é gerado automaticamente no servidor a partir do tipo de
+// solicitação e do nome do cliente (ver app/api/requests/route.ts), então
+// não é mais um campo obrigatório vindo do cliente — se enviado, é ignorado.
 export const createRequestSchema = z.object({
-  title: z.string().min(3, "Informe um título com pelo menos 3 caracteres."),
+  title: z.string().optional(),
   company_id: z.string().uuid("Selecione a empresa solicitante."),
   client_type: z.enum(["pessoa_fisica", "pessoa_juridica"]),
   document: z.string().min(11, "Informe um CPF/CNPJ válido."),
   client_name: z.string().min(2, "Informe o nome do cliente."),
   request_type: z.enum(["cancelamento", "renegociacao", "parcial", "geracao_boletos", "desconto"]),
-  authorization_responsible_id: z.string().uuid().nullable().optional(),
+  authorization_responsible: z.enum(AUTHORIZATION_RESPONSIBLES).nullable().optional(),
   total_amount: z.number().nullable().optional(),
   discount_amount: z.number().nullable().optional(),
   payment_method: z.enum(["boleto", "pix", "cartao", "transferencia", "outro"]).nullable().optional(),

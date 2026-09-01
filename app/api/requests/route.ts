@@ -88,17 +88,22 @@ export async function POST(req: NextRequest) {
 
   const payload = parsed.data;
 
+  // O título é sempre gerado no servidor a partir do tipo de solicitação e
+  // do nome do cliente ("Tipo - Cliente"), independente do que o cliente
+  // tenha enviado — garante a regra mesmo se o formulário for contornado.
+  const title = `${REQUEST_TYPE_LABELS[payload.request_type]} - ${payload.client_name}`;
+
   const { data: request, error } = await supabase
     .from("financial_requests")
     .insert({
-      title: payload.title,
+      title,
       company_id: payload.company_id,
       requester_id: user.id,
       client_type: payload.client_type,
       document: payload.document,
       client_name: payload.client_name,
       request_type: payload.request_type,
-      authorization_responsible_id: payload.authorization_responsible_id || null,
+      authorization_responsible: payload.authorization_responsible || null,
       total_amount: payload.total_amount ?? null,
       discount_amount: payload.discount_amount ?? null,
       payment_method: payload.payment_method || null,
@@ -121,15 +126,6 @@ export async function POST(req: NextRequest) {
       .in("id", payload.attachment_ids);
   }
 
-  // Cria o responsável primário como watcher, se houver
-  if (payload.authorization_responsible_id) {
-    await supabase.from("request_assignees").insert({
-      request_id: request.id,
-      user_id: payload.authorization_responsible_id,
-      is_primary: false,
-    });
-  }
-
   // Notificação in-app + e-mail para o responsável financeiro
   const financialEmail = process.env.FINANCIAL_NOTIFICATION_EMAIL;
   const { data: analysts } = await supabase.from("users").select("id, email").eq("role", "analista_financeiro").eq("active", true);
@@ -141,7 +137,7 @@ export async function POST(req: NextRequest) {
         request_id: request.id,
         type: "nova_solicitacao",
         title: `Nova solicitação ${request.request_number}`,
-        body: payload.title,
+        body: request.title,
       }))
     );
   }
@@ -149,7 +145,7 @@ export async function POST(req: NextRequest) {
   const { subject, html } = newRequestEmail({
     requestNumber: request.request_number,
     requestId: request.id,
-    title: payload.title,
+    title: request.title,
     clientName: payload.client_name,
     requesterName: user.full_name,
     requestTypeLabel: REQUEST_TYPE_LABELS[payload.request_type],
