@@ -1,6 +1,6 @@
 # Central Financeira (Fin-Hub) — operação no servidor
 
-Sistema no ar em **https://financeiro.169-58-32-104.sslip.io**, no servidor
+Sistema no ar em **https://faturamento.avantetools.com.br**, no servidor
 169.58.32.104. Tudo roda nessa máquina: aplicação, banco de dados, login e
 armazenamento de anexos. Não há dependência de nuvem externa, com uma única
 exceção opcional, o envio de e-mails pelo Resend.
@@ -18,11 +18,18 @@ exceção opcional, o envio de e-mails pelo Resend.
 | nginx (TLS e entrada pública) | serviço do host | 80 / 443 |
 
 Dois endereços públicos, com um certificado Let's Encrypt que cobre os dois e
-renova sozinho (`certbot`, cert-name `central-financeiro`):
+renova sozinho (`certbot`, cert-name `faturamento-avantetools`):
 
-- `financeiro.169-58-32-104.sslip.io` — o sistema, para as pessoas usarem.
-- `api-financeiro.169-58-32-104.sslip.io` — a API do Supabase. Precisa ser
+- `faturamento.avantetools.com.br` — o sistema, para as pessoas usarem.
+- `api-faturamento.avantetools.com.br` — a API do Supabase. Precisa ser
   pública porque o login e o upload de anexos acontecem no navegador.
+
+Os endereços antigos em sslip.io continuam de pé (cert `central-financeiro`):
+`financeiro.169-58-32-104.sslip.io` redireciona com 301 para o novo, e
+`api-financeiro.169-58-32-104.sslip.io` **segue servindo a API** em vez de
+redirecionar — um 301 quebraria qualquer POST que ainda saísse por ele, porque
+o corpo se perde no redirecionamento. Podem ser removidos quando ninguém mais
+os usar.
 
 Nenhum serviço escuta direto na internet: todos publicam apenas em 127.0.0.1 e
 o nginx é a única porta de entrada.
@@ -185,6 +192,18 @@ grava esses valores dentro do pacote que vai para o navegador. Trocar a URL ou a
 chave pública no `app.env` não basta: é preciso reconstruir a imagem com o
 `build-app.sh`. Já as variáveis do servidor (chave de serviço, Resend) são lidas
 em tempo de execução e um `up -d` resolve.
+
+**Trocar o domínio exige rebuild, não só editar o `.env`.** As URLs vivem em
+dois arquivos: `supabase/.env` (`SITE_URL`, `API_EXTERNAL_URL`,
+`SUPABASE_PUBLIC_URL`, `ADDITIONAL_REDIRECT_URLS`) e `app.env`
+(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`). Como as `NEXT_PUBLIC_*`
+entram no bundle do navegador durante o build, editar o `app.env` e reiniciar
+não basta: sem `build-app.sh`, o navegador continua chamando a API antiga. O
+script `migrar_dominio.py` faz as duas edições de uma vez.
+
+Trocar o domínio da API também **desloga todo mundo**: o cookie de sessão se
+chama `sb-<host-da-api>-auth-token`, então mudar o host muda o nome do cookie
+e as sessões antigas ficam órfãs. É esperado, não é defeito.
 
 **Não altere `POSTGRES_PORT` no `.env` do Supabase.** Ela é usada tanto para
 publicar a porta no host quanto nas conexões internas entre os serviços;
