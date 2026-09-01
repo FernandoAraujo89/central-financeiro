@@ -3,6 +3,19 @@
 
 export type UserRole = "solicitante" | "analista_financeiro" | "administrador";
 
+// Lista fixa de responsáveis pela autorização de solicitações financeiras.
+// Não são necessariamente usuários do sistema — apenas nomes de referência
+// usados no formulário de solicitação.
+export const AUTHORIZATION_RESPONSIBLES = [
+  "Mariana Luiza",
+  "Thiago",
+  "Luis Guilherme",
+  "Raul",
+  "Drielli",
+  "Juliana",
+] as const;
+export type AuthorizationResponsible = (typeof AUTHORIZATION_RESPONSIBLES)[number];
+
 export interface AppUser {
   id: string;
   email: string;
@@ -111,7 +124,7 @@ export interface FinancialRequest {
   document: string;
   client_name: string;
   request_type: RequestType;
-  authorization_responsible_id: string | null;
+  authorization_responsible: AuthorizationResponsible | null;
   total_amount: number | null;
   discount_amount: number | null;
   payment_method: PaymentMethod | null;
@@ -128,7 +141,6 @@ export interface FinancialRequest {
   company?: Company;
   requester?: AppUser;
   assignee?: AppUser | null;
-  authorization_responsible?: AppUser | null;
 }
 
 export interface RequestAttachment {

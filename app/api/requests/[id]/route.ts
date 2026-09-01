@@ -14,8 +14,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     .select(
       `*, company:companies(*),
        requester:users!financial_requests_requester_id_fkey(*),
-       assignee:users!financial_requests_assignee_id_fkey(*),
-       authorization_responsible:users!financial_requests_authorization_responsible_id_fkey(*)`
+       assignee:users!financial_requests_assignee_id_fkey(*)`
     )
     .eq("id", params.id)
     .single();

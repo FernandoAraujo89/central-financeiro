@@ -207,7 +207,7 @@ export function RequestDetail({
           <Field label="Tipo de cliente" value={CLIENT_TYPE_LABELS[request.client_type]} />
           <Field label="Cliente" value={request.client_name} />
           <Field label="CNPJ/CPF" value={request.document} />
-          <Field label="Responsável pela autorização" value={request.authorization_responsible?.full_name} />
+          <Field label="Responsável pela autorização" value={request.authorization_responsible} />
           <Field label="Valor total" value={request.total_amount !== null ? formatBRL(request.total_amount) : null} />
           <Field label="Valor a abater" value={request.discount_amount !== null ? formatBRL(request.discount_amount) : null} />
           <Field label="Forma de pagamento" value={request.payment_method ? PAYMENT_METHOD_LABELS[request.payment_method] : null} />

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { AppUser, Company, UserRole } from "@/lib/types";
-import { Plus, ShieldAlert } from "lucide-react";
+import { Plus, ShieldAlert, Pencil, Trash2, AlertTriangle } from "lucide-react";
 
 export default function UsuariosPage() {
   const { user: currentUser, loading: userLoading } = useCurrentUser();
@@ -62,6 +62,16 @@ function UsersTab() {
   const [fullName, setFullName] = React.useState("");
   const [role, setRole] = React.useState<UserRole>("solicitante");
 
+  // Editar usuário existente
+  const [editingUser, setEditingUser] = React.useState<AppUser | null>(null);
+  const [editName, setEditName] = React.useState("");
+  const [editRole, setEditRole] = React.useState<UserRole>("solicitante");
+  const [editSaving, setEditSaving] = React.useState(false);
+
+  // Excluir usuário (confirmação)
+  const [deletingUser, setDeletingUser] = React.useState<AppUser | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
+
   const load = React.useCallback(async () => {
     try {
       const res = await fetch("/api/users");
@@ -105,15 +115,54 @@ function UsersTab() {
     }
   }
 
-  async function updateRole(userId: string, newRole: UserRole) {
-    const res = await fetch(`/api/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: newRole }),
-    });
-    if (res.ok) {
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-      toast({ title: "Papel atualizado.", variant: "success" });
+  function openEdit(u: AppUser) {
+    setEditingUser(u);
+    setEditName(u.full_name);
+    setEditRole(u.role);
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/users/${editingUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full_name: editName, role: editRole }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title: "Não foi possível salvar", description: json.error, variant: "error" });
+        return;
+      }
+      setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, full_name: editName, role: editRole } : u)));
+      toast({ title: "Usuário atualizado.", variant: "success" });
+      setEditingUser(null);
+    } catch {
+      toast({ title: "Supabase não configurado", variant: "error" });
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deletingUser) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/users/${deletingUser.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title: "Não foi possível excluir", description: json.error, variant: "error" });
+        return;
+      }
+      setUsers((prev) => prev.map((u) => (u.id === deletingUser.id ? { ...u, active: false } : u)));
+      toast({ title: "Usuário excluído.", description: deletingUser.full_name, variant: "success" });
+      setDeletingUser(null);
+    } catch {
+      toast({ title: "Supabase não configurado", variant: "error" });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -180,22 +229,81 @@ function UsersTab() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {!u.active && <Badge color="gray">Inativo</Badge>}
-                <Select value={u.role} onValueChange={(v) => updateRole(u.id, v as UserRole)}>
-                  <SelectTrigger className="w-44">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ROLE_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Badge color="indigo">{ROLE_LABELS[u.role]}</Badge>
+                <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
+                  <Pencil className="h-3.5 w-3.5" /> Editar
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => setDeletingUser(u)}>
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir
+                </Button>
               </div>
             </div>
           ))}
       </div>
+
+      {/* Editar usuário */}
+      <Dialog open={editingUser !== null} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent title="Editar usuário">
+          <form onSubmit={handleEditSave} className="space-y-4 mt-2">
+            <div>
+              <Label>Nome completo</Label>
+              <Input required value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <Label>E-mail</Label>
+              <Input value={editingUser?.email || ""} disabled />
+            </div>
+            <div>
+              <Label>Papel</Label>
+              <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ROLE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline" size="sm">
+                  Cancelar
+                </Button>
+              </DialogClose>
+              <Button type="submit" size="sm" disabled={editSaving}>
+                Salvar alterações
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmar exclusão de usuário */}
+      <Dialog open={deletingUser !== null} onOpenChange={(open) => !open && setDeletingUser(null)}>
+        <DialogContent title="Excluir usuário">
+          <div className="flex items-start gap-3 text-sm text-neutral-600">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <p>
+              Tem certeza que deseja excluir <strong>{deletingUser?.full_name}</strong>? O usuário perde o acesso ao sistema;
+              solicitações, comentários e histórico já registrados por ele são preservados. Essa ação não pode ser desfeita.
+            </p>
+          </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button size="sm" variant="danger" onClick={handleDelete} disabled={deleting}>
+              Excluir
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -206,6 +314,9 @@ function CompaniesTab() {
   const [loading, setLoading] = React.useState(true);
   const [name, setName] = React.useState("");
   const [saving, setSaving] = React.useState(false);
+
+  const [deletingCompany, setDeletingCompany] = React.useState<Company | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   const load = React.useCallback(async () => {
     try {
@@ -246,6 +357,26 @@ function CompaniesTab() {
     }
   }
 
+  async function handleDelete() {
+    if (!deletingCompany) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/companies/${deletingCompany.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title: "Não foi possível excluir", description: json.error, variant: "error" });
+        return;
+      }
+      setCompanies((prev) => prev.map((c) => (c.id === deletingCompany.id ? { ...c, active: false } : c)));
+      toast({ title: "Empresa excluída.", description: deletingCompany.name, variant: "success" });
+      setDeletingCompany(null);
+    } catch {
+      toast({ title: "Supabase não configurado", variant: "error" });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <form onSubmit={handleCreate} className="flex gap-2">
@@ -261,10 +392,40 @@ function CompaniesTab() {
         {companies.map((c) => (
           <div key={c.id} className="flex items-center justify-between px-4 py-3">
             <span className="text-sm font-medium text-neutral-800">{c.name}</span>
-            {!c.active && <Badge color="gray">Inativa</Badge>}
+            <div className="flex items-center gap-2">
+              {!c.active && <Badge color="gray">Inativa</Badge>}
+              {c.active && (
+                <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => setDeletingCompany(c)}>
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Confirmar exclusão de empresa */}
+      <Dialog open={deletingCompany !== null} onOpenChange={(open) => !open && setDeletingCompany(null)}>
+        <DialogContent title="Excluir empresa">
+          <div className="flex items-start gap-3 text-sm text-neutral-600">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <p>
+              Tem certeza que deseja excluir <strong>{deletingCompany?.name}</strong>? Ela deixa de aparecer nos formulários e
+              filtros; solicitações já registradas continuam com o histórico intacto. Essa ação não pode ser desfeita.
+            </p>
+          </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button size="sm" variant="danger" onClick={handleDelete} disabled={deleting}>
+              Excluir
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
