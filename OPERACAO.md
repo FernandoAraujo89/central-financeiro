@@ -30,7 +30,7 @@ o nginx é a única porta de entrada.
 Arquivos em `/opt/central-financeiro`:
 
 ```
-app/                     código (clone do repositório do GitHub)
+app/                     código (clone de FernandoAraujo89/central-financeiro, o repositório oficial do deploy; o de Daniellepsants é o upstream)
 supabase/                Supabase self-hosted (compose oficial) + .env com os segredos
 app.env                  configuração da aplicação (permissão 0600)
 Dockerfile.app           imagem da aplicação
