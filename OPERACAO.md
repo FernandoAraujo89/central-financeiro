@@ -77,6 +77,11 @@ próprios. As identidades, as credenciais e os containers são separados; o SPF
 da raiz (Google, RD Station, SendGrid) não foi tocado, porque o Resend valida
 pelo return-path `send.avantejuntos.com.br`.
 
+O assunto do e-mail de recuperação está em português via
+`MAILER_SUBJECTS_RECOVERY` no `.env` do Supabase (o corpo segue o template
+padrão do GoTrue, em inglês; personalizar o corpo exige hospedar um HTML e
+apontar `GOTRUE_MAILER_TEMPLATES_RECOVERY` para ele).
+
 **Trocar a chave do Resend** (ex.: rotação após um vazamento). Já no servidor:
 
 ```bash
