@@ -6,6 +6,8 @@ Este diretório contém as migrações do banco, em ordem:
   pela autorização" para usar a lista fixa de nomes (Mariana Luiza, Thiago,
   Luis Guilherme, Raul, Drielli, Juliana) em vez de referenciar um usuário do
   sistema.
+- `migrations/0003_add_distributor.sql` — adiciona o campo opcional
+  "Distribuidor" (texto livre) à solicitação financeira.
 
 E um `seed.sql` opcional para dados de teste.
 
@@ -16,7 +18,7 @@ E um `seed.sql` opcional para dados de teste.
 2. Vá em **SQL Editor** → **New query**
 3. Abra o arquivo `migrations/0001_init.sql`, copie todo o conteúdo e cole no editor
 4. Clique em **Run**. Isso cria todos os tipos, tabelas, triggers, políticas de RLS e o bucket de anexos.
-5. Repita o processo com `migrations/0002_authorization_responsible.sql` (nessa ordem, depois do 0001).
+5. Repita o processo com `migrations/0002_authorization_responsible.sql` e depois `migrations/0003_add_distributor.sql` (nessa ordem, sempre depois do 0001).
 6. (Opcional) Repita o processo com `seed.sql` para inserir empresas de exemplo.
 
 ### Opção B — Supabase CLI

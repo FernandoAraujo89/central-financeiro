@@ -37,6 +37,7 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
   const [clientType, setClientType] = React.useState<ClientType>("pessoa_juridica");
   const [document, setDocument] = React.useState("");
   const [clientName, setClientName] = React.useState("");
+  const [distributor, setDistributor] = React.useState("");
   const [authResponsible, setAuthResponsible] = React.useState<AuthorizationResponsible | null>(null);
 
   // Título gerado automaticamente: "Tipo de Solicitação - Nome do Cliente"
@@ -144,6 +145,7 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
           client_type: clientType,
           document: onlyDigits(document),
           client_name: clientName,
+          distributor: distributor.trim() || null,
           request_type: requestType,
           authorization_responsible: authResponsible,
           total_amount: totalAmountNum,
@@ -290,6 +292,11 @@ export function RequestForm({ companies, users, currentUser }: { companies: Comp
             <Label>Nome do Cliente *</Label>
             <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Razão social ou nome completo" />
             {errors.clientName && <p className="mt-1 text-xs text-red-600">{errors.clientName}</p>}
+          </div>
+
+          <div className="md:col-span-2">
+            <Label>Distribuidor</Label>
+            <Input value={distributor} onChange={(e) => setDistributor(e.target.value)} placeholder="Nome do distribuidor (opcional)" />
           </div>
         </div>
       </section>

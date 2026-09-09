@@ -12,6 +12,7 @@ import {
   Inbox,
   UserCheck,
   Wallet,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
@@ -19,6 +20,7 @@ import { permissions } from "@/lib/permissions";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/solicitacoes", label: "Todas as solicitações", icon: ListChecks },
   { href: "/solicitacoes?mine=1", label: "Minhas solicitações", icon: Inbox },
   { href: "/solicitacoes?assigned=1", label: "Aguardando minha análise", icon: UserCheck },

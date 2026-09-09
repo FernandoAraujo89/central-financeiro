@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
       client_type: payload.client_type,
       document: payload.document,
       client_name: payload.client_name,
+      distributor: payload.distributor || null,
       request_type: payload.request_type,
       authorization_responsible: payload.authorization_responsible || null,
       total_amount: payload.total_amount ?? null,

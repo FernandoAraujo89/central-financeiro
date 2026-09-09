@@ -66,6 +66,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     "client_name",
     "document",
     "client_type",
+    "distributor",
     "total_amount",
     "discount_amount",
     "payment_method",

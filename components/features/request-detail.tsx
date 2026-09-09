@@ -23,7 +23,7 @@ import {
   type RequestAttachment,
 } from "@/lib/types";
 import { permissions } from "@/lib/permissions";
-import { FileText, Download, AlertTriangle } from "lucide-react";
+import { FileText, Download, AlertTriangle, Loader2 } from "lucide-react";
 
 const CONFIRM_STATUSES: RequestStatus[] = ["reprovada", "cancelada"];
 
@@ -53,9 +53,27 @@ export function RequestDetail({
   const { toast } = useToast();
   const [pendingStatus, setPendingStatus] = React.useState<RequestStatus | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [loadingAttachmentId, setLoadingAttachmentId] = React.useState<string | null>(null);
 
   const canManage = permissions.canChangeStatus(currentUser.role);
   const typeData = request.type_specific_data || {};
+
+  async function openAttachment(attachmentId: string, download: boolean) {
+    setLoadingAttachmentId(attachmentId);
+    try {
+      const res = await fetch(`/api/requests/${request.id}/attachments/${attachmentId}${download ? "?download=1" : ""}`);
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title: "Não foi possível abrir o anexo", description: json.error, variant: "error" });
+        return;
+      }
+      window.open(json.data.url, "_blank", "noopener,noreferrer");
+    } catch {
+      toast({ title: "Não foi possível abrir o anexo", description: "Verifique sua conexão e tente novamente.", variant: "error" });
+    } finally {
+      setLoadingAttachmentId(null);
+    }
+  }
 
   async function applyStatus(status: RequestStatus) {
     setSaving(true);
@@ -206,6 +224,7 @@ export function RequestDetail({
           <Field label="Tipo de solicitação" value={REQUEST_TYPE_LABELS[request.request_type]} />
           <Field label="Tipo de cliente" value={CLIENT_TYPE_LABELS[request.client_type]} />
           <Field label="Cliente" value={request.client_name} />
+          <Field label="Distribuidor" value={request.distributor} />
           <Field label="CNPJ/CPF" value={request.document} />
           <Field label="Responsável pela autorização" value={request.authorization_responsible} />
           <Field label="Valor total" value={request.total_amount !== null ? formatBRL(request.total_amount) : null} />
@@ -235,14 +254,32 @@ export function RequestDetail({
         <div className="rounded-2xl border border-neutral-200 bg-white p-6">
           <h2 className="mb-4 text-base font-semibold text-neutral-800">Anexos</h2>
           <ul className="space-y-2">
-            {attachments.map((a) => (
-              <li key={a.id} className="flex items-center justify-between rounded-lg bg-neutral-50 px-3 py-2 text-sm">
-                <span className="flex items-center gap-2 text-neutral-700 truncate">
-                  <FileText className="h-4 w-4 text-neutral-400 shrink-0" /> {a.file_name}
-                </span>
-                <Download className="h-4 w-4 text-neutral-400" />
-              </li>
-            ))}
+            {attachments.map((a) => {
+              const isLoading = loadingAttachmentId === a.id;
+              return (
+                <li key={a.id} className="flex items-center justify-between gap-2 rounded-lg bg-neutral-50 px-3 py-2 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => openAttachment(a.id, false)}
+                    disabled={isLoading}
+                    title="Abrir anexo em uma nova aba"
+                    className="flex min-w-0 items-center gap-2 text-neutral-700 hover:text-primary-700 hover:underline disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <FileText className="h-4 w-4 text-neutral-400 shrink-0" />
+                    <span className="truncate">{a.file_name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openAttachment(a.id, true)}
+                    disabled={isLoading}
+                    title="Baixar anexo"
+                    className="shrink-0 text-neutral-400 hover:text-primary-600 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
