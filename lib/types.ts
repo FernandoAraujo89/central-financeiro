@@ -56,6 +56,18 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   concluida: "Concluída",
 };
 
+// Status considerados "em aberto" (ainda tramitando) vs. "finalizados" —
+// usados nos KPIs de dashboard/relatórios.
+export const OPEN_REQUEST_STATUSES: RequestStatus[] = [
+  "nova",
+  "em_analise",
+  "em_validacao",
+  "aguardando_informacoes",
+  "aguardando_responsavel",
+];
+
+export const CLOSED_REQUEST_STATUSES: RequestStatus[] = ["aprovada", "reprovada", "cancelada", "concluida"];
+
 export type RequestPriority = "baixa" | "normal" | "alta" | "urgente";
 
 export const REQUEST_PRIORITY_LABELS: Record<RequestPriority, string> = {
@@ -123,6 +135,7 @@ export interface FinancialRequest {
   client_type: ClientType;
   document: string;
   client_name: string;
+  distributor: string | null;
   request_type: RequestType;
   authorization_responsible: AuthorizationResponsible | null;
   total_amount: number | null;

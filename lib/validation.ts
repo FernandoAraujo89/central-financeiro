@@ -19,6 +19,7 @@ export const createRequestSchema = z.object({
   client_type: z.enum(["pessoa_fisica", "pessoa_juridica"]),
   document: z.string().min(11, "Informe um CPF/CNPJ válido."),
   client_name: z.string().min(2, "Informe o nome do cliente."),
+  distributor: z.string().nullable().optional(),
   request_type: z.enum(["cancelamento", "renegociacao", "parcial", "geracao_boletos", "desconto"]),
   authorization_responsible: z.enum(AUTHORIZATION_RESPONSIBLES).nullable().optional(),
   total_amount: z.number().nullable().optional(),
